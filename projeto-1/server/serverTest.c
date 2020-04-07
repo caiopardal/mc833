@@ -10,19 +10,29 @@
 
 void main()
 {
-  int clientSocket;
-
+  int sockfd;
   struct sockaddr_in serverAddr;
+
+  int newSocket;
+  struct sockaddr_in newAddr;
+
+  socklen_t addr_size;
   char buffer[1024];
 
-  clientSocket = socket(PF_INET, SOCK_STREAM, 0);
+  sockfd = socket(PF_INET, SOCK_STREAM, 0);
   memset(&serverAddr, '\0', sizeof(serverAddr));
+
   serverAddr.sin_family = AF_INET;
   serverAddr.sin_port = htons(PORT);
   serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-  connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+  bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
 
-  recv(clientSocket, buffer, 1024, 0);
-  printf("DATA RECEIVED: %s", buffer);
+  listen(sockfd, 5);
+  addr_size = sizeof(newAddr);
+
+  newSocket = accept(sockfd, (struct sockaddr *)&newAddr, &addr_size);
+
+  strcpy(buffer, "Hello");
+  send(newSocket, buffer, strlen(buffer), 0);
 }

@@ -62,3 +62,208 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+/*#############################################################################*/
+
+void request_options(int socket)
+{
+  char buffer[BUFFLEN];
+
+  // notify connections is set
+  strcpy(buffer, "connection is set...\n");
+  write_d(socket, buffer, strlen(buffer));
+
+  // notify connections is set
+  strcpy(buffer, "Type help for instructions");
+  write_d(socket, buffer, strlen(buffer));
+
+  while (1)
+  {
+    // Await new message from client
+    printf("server awaiting new message...\n");
+    read_d(socket, buffer);
+
+    // Test which request the client aksed for
+    switch (strtok(buffer, " ")[0])
+    {
+    case '#':
+      printf("sending file...\n");
+      send_file(socket, buffer, strtok(NULL, " "));
+      break;
+    case '1':
+      printf("adding a new movie...\n");
+      // add movie function here
+      // printf("new movie id: %s\n", movieId);
+      break;
+    case '2':
+      printf("removing the movie...\n");
+      // remove movie function here
+      printf("movie removed\n");
+      break;
+    case '3':
+      printf("retrieving titles and movie rooms...\n");
+      // retrieve all movies titles and rooms function here
+      break;
+    case '4':
+      printf("retrieving movies by genre...\n");
+      // get all movies by genre function here
+      // printf("%s movies retrieved\n", movieGenre);
+      break;
+    case '5':
+      printf("retrieving movie title...\n");
+      // get movie by title function here
+      printf("movie title retrieved\n");
+      break;
+    case '6': // Get full movie info
+      printf("retrieving movie...\n");
+      // get_movie(socket, buffer, strtok(NULL, " "));
+      printf("movie sent!\n");
+      break;
+    case '7':
+      printf("retrieving all movies...\n");
+      // retrieve all movies function here
+      // get_all_movies(socket, buffer);
+      printf("all movies retrieved!\n");
+      break;
+    case 'h':
+      printf("sending help info...\n");
+      send_help(socket, buffer);
+      break;
+    case 'e':
+      return;
+    default:
+      printf("invalid option\n");
+    }
+
+    // End connection if requested by client
+    if (!strcmp(buffer, "exit"))
+      break;
+  }
+
+  return;
+}
+
+/*## Movie Functions ########################################################*/
+
+void get_all_movies(int socket, char *buffer)
+{
+  FILE *index;
+
+  get_path(buffer, "index", 't');
+  index = fopen(buffer, "r");
+
+  while (fgets(buffer, BUFFLEN, index))
+  {
+    buffer[strlen(buffer) - 1] = '\0';
+    printf("sending profile: %s\n", buffer);
+    write_d(socket, buffer, strlen(buffer)); // send profile email
+    get_profile(socket, buffer, buffer);     // send profile
+  }
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+
+  return;
+}
+
+void send_help(int socket, char *buffer)
+{
+  FILE *help;
+
+  get_path(buffer, "help", 't');
+  help = fopen(buffer, "r");
+
+  while (fgets(buffer, BUFFLEN, help))
+  {
+    buffer[strlen(buffer) - 1] = '\0';
+    printf("sending: %s\n", buffer);
+    write_d(socket, buffer, strlen(buffer));
+  }
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+
+  return;
+}
+
+/*## Transfer file functions ##################################################*/
+
+// Function to split all the files that are inside "data" folder and send
+// them to the client
+void send_file(int socket, char *buffer, char *full_path)
+{
+  FILE *input;          // File that is going to be sent
+  long int i = 0, size; // size of it
+
+  input = fopen(full_path, "rb");
+  printf("sending file \"%s\"\n", get_name(full_path));
+
+  // Get file size
+  fseek(input, 0, SEEK_END);
+  size = ftell(input);
+  fseek(input, 0, SEEK_SET);
+
+  sprintf(buffer, "%ld", size);            // Convert size to string
+  write_d(socket, buffer, strlen(buffer)); // Send to client
+
+  while (i < size)
+  { // reads char by char filling buffer until eof
+    buffer[(i++) % BUFFLEN] = fgetc(input);
+    if (i % BUFFLEN == 0 || i == size)
+      write_d(socket, buffer, BUFFLEN); // sends entire buffer to avoid border issues
+  }
+
+  printf("file sent\n");
+  fclose(input);
+  return;
+}
+
+//## Functions to handle paths ##################################################
+
+// Function to get the path of the file that will be sent
+char *get_path(char *path, char *file_name_buff, char id)
+{
+  char szTmp[32], file_name[BUFFLEN];
+  int bytes;
+
+  strcpy(file_name, file_name_buff);
+  sprintf(szTmp, "/proc/%d/exe", getpid()); // get this process origin file path
+  bytes = readlink(szTmp, path, BUFFLEN);   // save path
+
+  for (bytes; path[bytes] != '/'; --bytes)
+    ;                     // removes the process name
+  path[bytes + 1] = '\0'; // end of file
+
+  if (id == 't')
+    strcat(strcat(strcat(path, "data/"), file_name), ".txt");
+
+  return path; // return the path and its size
+}
+
+char *get_name(char *path)
+{
+  int i;
+
+  for (i = strlen(path); i >= 0; --i)
+    if (path[i] == '/')
+      return &(path[i + 1]);
+
+  return path;
+}
+
+/*## Functions to search something specific inside a file #######################*/
+
+// Retrieves a specific entry from the movie
+char *get_line(FILE *movie, char *buffer, int line)
+{
+  int i, position = ftell(movie);
+
+  fseek(movie, 0, SEEK_SET);
+  for (i = 1; i < line; ++i)
+    fgets(buffer, BUFFLEN, movie);
+  buffer = fgets(buffer, BUFFLEN, movie);
+  fseek(movie, position, SEEK_SET);
+
+  if (buffer && buffer[strlen(buffer) - 1] == '\n')
+    buffer[strlen(buffer) - 1] = '\0';
+
+  return buffer;
+}
