@@ -5,7 +5,7 @@ FILE *time_output;
 
 int main(int argc, char *argv[])
 {
-  int sockfd, new_fd, pid; // listen on sock_fd, new connection on new_fd
+  int sockfd, new_fd, pid; // listen on sock_fd and new connection on new_fd
   struct sockaddr_in server, client;
   int sin_size;
 
@@ -145,6 +145,58 @@ void request_options(int socket)
 
 /*## Movie Functions ########################################################*/
 
+void movies_by_genre(int socket, char *buffer, char *genre_copy)
+{
+  FILE *index, *movie;
+  char genre[BUFFLEN], movie_name[BUFFLEN];
+
+  strcpy(genre, genre_copy);
+  index = fopen(get_path(buffer, "index", 't'), "r");
+
+  while (fgets(movie_name, BUFFLEN, index))
+  {
+    movie_name[strlen(movie_name) - 1] = '\0';
+    movie = fopen(get_path(buffer, movie_name, 't'), "r");
+    get_line(movie, buffer, 4);
+    printf("%s is of the genre |%s|%s|\n", movie_name, buffer, genre);
+
+    if (!strcmp(buffer, genre))
+    {
+      sprintf(buffer, "\"%s\" movie name:\n", movie_name);
+      write_d(socket, buffer, strlen(buffer));
+      get_line(movie, buffer, 1);
+      strcat(buffer, " ");
+      get_line(movie, &buffer[strlen(buffer)], 2);
+      strcat(buffer, "\n");
+      write_d(socket, buffer, strlen(buffer));
+    }
+
+    fclose(movie);
+  }
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+
+  fclose(index);
+  return;
+}
+
+void get_movie_title(int socket, char *buffer, char *movie_name)
+{
+  FILE *movie;
+  char path[BUFFLEN];
+  int i = 6;
+
+  movie = fopen(get_path(path, movie_name, 't'), "r");
+
+  while (get_line(movie, buffer, i++))
+    write_d(socket, strcat(buffer, "\n"), strlen(buffer) + 1);
+
+  write_d(socket, buffer, 0); // Send empty buffer to sinal eof
+
+  fclose(movie);
+  return;
+}
+
 void get_all_movies(int socket, char *buffer)
 {
   FILE *index;
@@ -155,12 +207,45 @@ void get_all_movies(int socket, char *buffer)
   while (fgets(buffer, BUFFLEN, index))
   {
     buffer[strlen(buffer) - 1] = '\0';
-    printf("sending profile: %s\n", buffer);
-    write_d(socket, buffer, strlen(buffer)); // send profile email
-    get_profile(socket, buffer, buffer);     // send profile
+    printf("sending movie: %s\n", buffer);
+    write_d(socket, buffer, strlen(buffer)); // send movie name
+    get_movie(socket, buffer, buffer);       // send movie
   }
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
+
+  return;
+}
+
+void get_movie(int socket, char *buffer, char *buff_movie_name)
+{
+  FILE *fptr;
+  int line = 0;
+  char movie_name[BUFFLEN], tag[BUFFLEN];
+  char *tags[] = {"Nome: \0", "Gênero: \0", "Salas de exibição: \0", "              \0"};
+
+  strcpy(movie_name, buff_movie_name); // Copy movie name key from buffer
+
+  // Gets the values in the txt file
+  get_path(buffer, movie_name, 't');
+
+  if ((fptr = fopen(buffer, "r")) == NULL)
+  {
+    printf("Error! opening file: %s\n", buffer);
+    exit(1); // Exits if failed to open file
+  }
+
+  // Send contents from file
+  while (fgets(buffer, BUFFLEN, fptr))
+  {
+    strcpy(tag, tags[line]);
+    strcat(tag, buffer);
+    write_d(socket, tag, strlen(tag));
+    if (line < 6)
+      ++line;
+  }
+
+  write_d(socket, buffer, 0); // Send empty buffer to sinal eof
 
   return;
 }

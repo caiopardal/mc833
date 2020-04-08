@@ -14,6 +14,14 @@
 #define BUFFLEN 256 // Length of the message buffer
 #define PORT "3490" // the port client will be connecting to
 
+// Funcions signatures
+void receive_file(int, char *, char *);
+void make_request(int);
+char *get_name(char *);
+void send_file(int, char *, char *);
+void receive_data(int, char *);
+char *get_path(char *);
+
 // Debuggin wrapper for send
 int write_d(int socket, char *buffer, int length)
 {

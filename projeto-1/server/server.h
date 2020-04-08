@@ -17,6 +17,16 @@
 #define PORT 3490   // the port users will be connecting to
 #define BACKLOG 10  // how many pending connections queue will hold
 
+// FUNCTIONS signatures
+void request_options(int);
+void send_file(int, char *, char *);
+void send_help(int, char *);
+char *get_name(char *);
+void send_data(int, char *, int);
+void receive_file(int, char *, char *);
+char *get_line(FILE *, char *, int);
+char *get_path(char *, char *, char);
+
 // Debuggin wrapper for send
 int write_d(int socket, char *buffer, int length)
 {
