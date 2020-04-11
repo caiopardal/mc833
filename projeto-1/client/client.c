@@ -90,44 +90,51 @@ void make_request(int socket)
     // Await server commands
     switch (strtok(buffer, " ")[0])
     {
-    case '#':
-      printf("awaiting file...\n");
-      receive_file(socket, buffer, strtok(NULL, " "));
-      break;
     case '1':
-      printf("awaiting to add a new movie...\n");
-      // add movie function here
+      printf("adding a new movie...\n");
+      read_d(socket, buffer);
+      printf("movie added\n");
       // printf("new movie id: %s\n", movieId);
       break;
     case '2':
-      printf("awaiting to remove the movie...\n");
-      // remove movie function here
+      printf("removing the movie...\n");
+      read_d(socket, buffer);
       printf("movie removed\n");
       break;
     case '3':
       printf("awaiting titles and movie rooms...\n");
-      // retrieve all movies titles and rooms function here
+      while (buffer[0])
+        receive_data(socket, buffer);
+      printf("received movies\n");
       break;
     case '4':
       printf("awaiting movies by genre...\n");
-      // get all movies by genre function here
-      // printf("%s movies retrieved\n", movieGenre);
+      while (buffer[0])
+        receive_data(socket, buffer);
+      printf("movies by genre received\n");
       break;
     case '5':
       printf("awaiting movie title...\n");
-      // get movie by title function here
+      printf("awating \"%s\" title...\n", strtok(NULL, " "));
+      while (buffer[0])
+        receive_data(socket, buffer);
       printf("movie title received\n");
       break;
     case '6': // Get full movie info
-      printf("awaiting movie...\n");
-      // get_movie(socket, buffer, strtok(NULL, " "));
-      printf("movie received!\n");
+      printf("awating \"%s\" info...\n", strtok(NULL, " "));
+      while (buffer[0])
+        receive_data(socket, buffer);
+      printf("movie info received\n");
       break;
     case '7':
       printf("awaiting all movies...\n");
-      // retrieve all movies function here
-      // get_all_movies(socket, buffer);
-      printf("all movies retrieved!\n");
+      read_d(socket, buffer);
+      while (buffer[0])
+      {
+        receive_data(socket, buffer);
+        read_d(socket, buffer);
+      }
+      printf("\nall movies received\n");
       break;
     case 'h':
       while (buffer[0])
@@ -161,32 +168,6 @@ void receive_data(int socket, char *buffer)
 
 /*## Functions for transfering files ##################################*/
 
-// Receive a file from socket
-void receive_file(int socket, char *buffer, char *path)
-{
-  FILE *output;
-  long int i = 0, base, size;
-  char file_name[BUFFLEN];
-
-  strcat(strcat(strcat(get_path(buffer), "data/"), strcpy(file_name, path)), ".jpg");
-  printf("\nreceving profile image: \"%s\"...\n", buffer);
-  output = fopen(buffer, "wb"); // create/erase file to write
-
-  read_d(socket, buffer);          // Read size
-  size = strtol(buffer, NULL, 10); // Cast size to long int
-
-  while (i < size)
-  {
-    read_d(socket, buffer);                                 // Read a full buffer.
-    for (base = i; (i < base + BUFFLEN) && (i < size); ++i) // Write elements
-      fputc(buffer[i % BUFFLEN], output);
-  }
-
-  printf("image received\n");
-  fclose(output);
-  return;
-}
-
 // Gets the full path of the file to be sent
 char *get_path(char *path)
 {
@@ -201,16 +182,4 @@ char *get_path(char *path)
   path[bytes + 1] = '\0'; // add eof
 
   return path; // return path size and full path
-}
-
-// This was create solely for the purpose of testing the # option
-char *get_name(char *path)
-{
-  int i;
-
-  for (i = strlen(path); i >= 0; --i)
-    if (path[i] == '/')
-      return &(path[i + 1]);
-
-  return path;
 }
