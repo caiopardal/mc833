@@ -92,12 +92,12 @@ void request_options(int socket)
       break;
     case '1':
       printf("adding a new movie...\n");
-      // add movie function here
-      // printf("new movie id: %s\n", movieId);
+      add_movie(socket, buffer, strtok(NULL, " "));
+      printf("new movie id: %s\n", strtok(NULL, " "));
       break;
     case '2':
       printf("removing the movie...\n");
-      // remove movie function here
+      remove_movie(socket, buffer, strtok(NULL, " "));
       printf("movie removed\n");
       break;
     case '3':
@@ -106,23 +106,23 @@ void request_options(int socket)
       break;
     case '4':
       printf("retrieving movies by genre...\n");
+      movies_by_genre(socket, buffer, strtok(NULL, " "));
       // get all movies by genre function here
-      // printf("%s movies retrieved\n", movieGenre);
+      printf("movies by genre retrieved\n");
       break;
     case '5':
       printf("retrieving movie title...\n");
-      // get movie by title function here
+      get_movie_title(socket, buffer, strtok(NULL, " "));
       printf("movie title retrieved\n");
       break;
     case '6': // Get full movie info
       printf("retrieving movie...\n");
-      // get_movie(socket, buffer, strtok(NULL, " "));
+      get_movie(socket, buffer, strtok(NULL, " "));
       printf("movie sent!\n");
       break;
     case '7':
       printf("retrieving all movies...\n");
-      // retrieve all movies function here
-      // get_all_movies(socket, buffer);
+      get_all_movies(socket, buffer);
       printf("all movies retrieved!\n");
       break;
     case 'h':
@@ -144,6 +144,57 @@ void request_options(int socket)
 }
 
 /*## Movie Functions ########################################################*/
+
+void add_movie(int socket, char *buffer, char *movie_name)
+{
+  /* File pointer to hold reference to our file */
+  FILE *movie;
+
+  /* 
+     * Open file in w (write) mode. 
+     * "data/file1.txt" is complete path to create file
+     */
+  char fileName[1000] = "data/";
+  strcat(fileName, movie_name);
+  movie = fopen(fileName, "w");
+
+  /* fopen() return NULL if last operation was unsuccessful */
+  if (movie == NULL)
+  {
+    /* File not created hence exit */
+    printf("Unable to create file.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  char data[1000] = "Movie Name: ";
+  strcat("Movie Name: ", movie_name);
+  /* Write data to file */
+  fputs(data, movie);
+
+  /* Send file identifier */
+  sprintf(buffer, "\"%s\" movie identifier:\n", movie_name);
+  write_d(socket, buffer, strlen(buffer));
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  /* Close file to save file data */
+  fclose(movie);
+
+  return;
+}
+
+void remove_movie(int socket, char *buffer, char *movie_name)
+{
+  char fileName[1000] = "data/";
+  strcat(fileName, movie_name);
+
+  if (remove(fileName) == 0)
+    printf("Deleted successfully");
+  else
+    printf("Unable to delete the file");
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  return;
+}
 
 void movies_by_genre(int socket, char *buffer, char *genre_copy)
 {
