@@ -185,12 +185,15 @@ void add_movie(int socket, char *buffer, char *movie_name)
 void remove_movie(int socket, char *buffer, char *movie_name)
 {
   char fileName[1000] = "data/";
-  strcat(fileName, movie_name);
+  char fileType[5] = ".txt";
+
+  strcat(fileName, movie_name); // concatenate folder name with typed movie name
+  strcat(fileName, fileType);   // concatenate folder + movie_name with file type to generate the complete filename
 
   if (remove(fileName) == 0)
-    printf("Deleted successfully");
+    printf("Deleted successfully\n");
   else
-    printf("Unable to delete the file");
+    printf("Unable to delete the file\n");
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
   return;
@@ -208,15 +211,15 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
   {
     movie_name[strlen(movie_name) - 1] = '\0';
     movie = fopen(get_path(buffer, movie_name, 't'), "r");
-    get_line(movie, buffer, 4);
+    get_line(movie, buffer, 2);
     printf("%s is of the genre |%s|%s|\n", movie_name, buffer, genre);
 
     if (!strcmp(buffer, genre))
     {
-      sprintf(buffer, "\"%s\" movie name:\n", movie_name);
+      sprintf(buffer, "Gênero escolhido: \"%s\" \n", genre);
       write_d(socket, buffer, strlen(buffer));
       get_line(movie, buffer, 1);
-      strcat(buffer, " ");
+      strcat(buffer, " Gênero: ");
       get_line(movie, &buffer[strlen(buffer)], 2);
       strcat(buffer, "\n");
       write_d(socket, buffer, strlen(buffer));
@@ -235,12 +238,12 @@ void get_movie_title(int socket, char *buffer, char *movie_name)
 {
   FILE *movie;
   char path[BUFFLEN];
-  int i = 6;
+  int i = 1;
 
   movie = fopen(get_path(path, movie_name, 't'), "r");
 
-  while (get_line(movie, buffer, i++))
-    write_d(socket, strcat(buffer, "\n"), strlen(buffer) + 1);
+  get_line(movie, buffer, i); // Get movie title
+  write_d(socket, strcat(buffer, "\n"), strlen(buffer) + 1);
 
   write_d(socket, buffer, 0); // Send empty buffer to sinal eof
 
