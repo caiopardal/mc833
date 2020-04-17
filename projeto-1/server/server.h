@@ -27,6 +27,7 @@ void receive_file(int, char *, char *);
 char *get_line(FILE *, char *, int);
 char *get_path(char *, char *, char);
 void get_all_movies(int, char *);
+void get_movie_titles_and_rooms(int, char *);
 void get_movie(int, char *, char *);
 void add_movie(int, char *, char *);
 void remove_movie(int, char *, char *);

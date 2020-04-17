@@ -75,7 +75,6 @@ void make_request(int socket)
 
   // receive help
   read_d(socket, buffer);
-  printf("%s\n", buffer);
 
   while (1)
   {
@@ -114,8 +113,7 @@ void make_request(int socket)
       printf("movies by genre received\n");
       break;
     case '5':
-      printf("awaiting movie title...\n");
-      printf("awating \"%s\" title...\n", strtok(NULL, " "));
+      printf("awaiting \"%s\" title...\n", strtok(NULL, " "));
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movie title received\n");

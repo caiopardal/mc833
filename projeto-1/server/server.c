@@ -102,12 +102,12 @@ void request_options(int socket)
       break;
     case '3':
       printf("retrieving titles and movie rooms...\n");
-      // retrieve all movies titles and rooms function here
+      get_movie_titles_and_rooms(socket, buffer);
+      printf("all movie titles and rooms retrieved!\n");
       break;
     case '4':
       printf("retrieving movies by genre...\n");
-      movies_by_genre(socket, buffer, strtok(NULL, " "));
-      // get all movies by genre function here
+      movies_by_genre(socket, buffer, strtok(NULL, "\n"));
       printf("movies by genre retrieved\n");
       break;
     case '5':
@@ -182,20 +182,109 @@ void add_movie(int socket, char *buffer, char *movie_name)
   return;
 }
 
-void remove_movie(int socket, char *buffer, char *movie_name)
+void remove_movie(int socket, char *buffer, char *movie_name_copy)
 {
+  printf("Movienamecopy: %s", movie_name_copy);
+
+  // First we need to delete the line that contains the removed movie from index.txt
+  FILE *index, *replacer;
+  char filename[20] = "data/index.txt";
+  char ch, movie_name[BUFFLEN];
+  int delete_line, temp = 1;
+
+  //open file in read mode
+  index = fopen(get_path(buffer, "index", 't'), "r");
+
+  while (fgets(movie_name, BUFFLEN, index))
+  {
+    movie_name[strlen(movie_name) - 1] = '\0';
+    printf("MovieName: %s\n", movie_name);
+    printf("Copy: %s\n", movie_name_copy);
+    printf("%d\n", strcmp(movie_name_copy, movie_name));
+
+    if (strcmp(movie_name_copy, movie_name))
+      delete_line = temp;
+
+    temp++;
+  }
+
+  ch = getc(index);
+  while (ch != EOF)
+  {
+    ch = getc(index);
+  }
+  //rewind
+  rewind(index);
+
+  //open new file in write mode
+  replacer = fopen("data/replica.txt", "w");
+  ch = 'A';
+  temp = 1;
+  while (ch != EOF)
+  {
+    ch = getc(index);
+    //except the line to be deleted
+    if (temp != delete_line)
+    {
+      //copy all lines to file replica.txt
+      putc(ch, replacer);
+    }
+    if (ch == '\n')
+    {
+      temp++;
+    }
+  }
+
+  fclose(index);
+  fclose(replacer);
+  // remove(filename);
+
+  //rename the file replica.txt to original name
+  // rename("data/replica.txt", filename);
+
+  // Now we need to delete the txt file for the chosen movie
   char fileName[1000] = "data/";
   char fileType[5] = ".txt";
 
-  strcat(fileName, movie_name); // concatenate folder name with typed movie name
-  strcat(fileName, fileType);   // concatenate folder + movie_name with file type to generate the complete filename
+  strcat(fileName, movie_name_copy); // concatenate folder name with typed movie name
+  strcat(fileName, fileType);        // concatenate folder + movie_name with file type to generate the complete filename
 
-  if (remove(fileName) == 0)
-    printf("Deleted successfully\n");
-  else
-    printf("Unable to delete the file\n");
+  // if (remove(fileName) == 0)
+  //   printf("Deleted successfully\n");
+  // else
+  // {
+  //   printf("Unable to delete the file\n");
+  //   exit(1);
+  // }
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  return;
+}
+
+void get_movie_titles_and_rooms(int socket, char *buffer)
+{
+  FILE *index, *movie;
+  char room[BUFFLEN], movie_name[BUFFLEN];
+
+  index = fopen(get_path(buffer, "index", 't'), "r");
+
+  while (fgets(movie_name, BUFFLEN, index))
+  {
+    movie_name[strlen(movie_name) - 1] = '\0';
+    movie = fopen(get_path(buffer, movie_name, 't'), "r");
+
+    get_line(movie, buffer, 1);
+    strcat(buffer, " Salas de exibição: ");
+    get_line(movie, &buffer[strlen(buffer)], 3);
+    strcat(buffer, "\n");
+    write_d(socket, buffer, strlen(buffer));
+
+    fclose(movie);
+  }
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+
+  fclose(index);
   return;
 }
 
@@ -216,8 +305,6 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
 
     if (!strcmp(buffer, genre))
     {
-      sprintf(buffer, "Gênero escolhido: \"%s\" \n", genre);
-      write_d(socket, buffer, strlen(buffer));
       get_line(movie, buffer, 1);
       strcat(buffer, " Gênero: ");
       get_line(movie, &buffer[strlen(buffer)], 2);
