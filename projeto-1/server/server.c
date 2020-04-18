@@ -92,8 +92,8 @@ void request_options(int socket)
       break;
     case '1':
       printf("adding a new movie...\n");
-      add_movie(socket, buffer, strtok(NULL, " "));
-      printf("new movie id: %s\n", strtok(NULL, " "));
+      add_movie(socket, buffer, strtok(NULL, "\n"));
+      printf("new movie added\n");
       break;
     case '2':
       printf("removing the movie...\n");
@@ -145,17 +145,65 @@ void request_options(int socket)
 
 /*## Movie Functions ########################################################*/
 
-void add_movie(int socket, char *buffer, char *movie_name)
+void add_movie(int socket, char *buffer, char *movie_info)
 {
   /* File pointer to hold reference to our file */
-  FILE *movie;
+  FILE *movie, *index;
+  int count = 0;
+  char movie_info_copy[BUFFLEN], movie_name[BUFFLEN], movie_genre[BUFFLEN], movie_rooms[BUFFLEN];
+  strcpy(movie_info_copy, movie_info);
 
-  /* 
-     * Open file in w (write) mode. 
-     * "data/file1.txt" is complete path to create file
-     */
+  int init_size = strlen(movie_info_copy);
+  char delim[] = ",";
+
+  char *ptr = strtok(movie_info_copy, delim);
+
+  while (ptr != NULL)
+  {
+    if (count == 0)
+    {
+      strcpy(movie_name, ptr);
+    }
+    else if (count == 1)
+    {
+      strcpy(movie_genre, ptr);
+    }
+    else if (count == 2)
+    {
+      strcpy(movie_rooms, ptr);
+    }
+
+    ptr = strtok(NULL, delim);
+
+    count++;
+  }
+
+  // First we need to update the index.txt file
+
+  //open file in append mode
+  index = fopen("data/index.txt", "a");
+
+  if (index == NULL)
+  {
+    /* File not created hence exit */
+    printf("Unable to open the file.\n");
+    exit(1);
+  }
+  else
+  {
+    fputs(movie_name, index);
+    fputc('\n', index);
+  }
+
+  fclose(index);
+
+  // Now we need to create the new file
   char fileName[1000] = "data/";
-  strcat(fileName, movie_name);
+  char fileType[5] = ".txt";
+
+  strcat(fileName, movie_name); // concatenate folder name with typed movie name
+  strcat(fileName, fileType);   // concatenate folder + movie_name with file type to generate the complete filename
+
   movie = fopen(fileName, "w");
 
   /* fopen() return NULL if last operation was unsuccessful */
@@ -163,21 +211,27 @@ void add_movie(int socket, char *buffer, char *movie_name)
   {
     /* File not created hence exit */
     printf("Unable to create file.\n");
-    exit(EXIT_FAILURE);
+    exit(1);
+  }
+  else
+  {
+    char c = '\n';
+
+    /* Write data to file */
+    fputs(movie_name, movie);
+    fputc(c, movie);
+
+    fputs(movie_genre, movie);
+    fputc(c, movie);
+
+    fputs(movie_rooms, movie);
+    fputc(c, movie);
   }
 
-  char data[1000] = "Movie Name: ";
-  strcat("Movie Name: ", movie_name);
-  /* Write data to file */
-  fputs(data, movie);
-
-  /* Send file identifier */
-  sprintf(buffer, "\"%s\" movie identifier:\n", movie_name);
-  write_d(socket, buffer, strlen(buffer));
-
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
   /* Close file to save file data */
   fclose(movie);
+
+  write_d(socket, buffer, 0); // Send empty buffer to signal eof
 
   return;
 }
@@ -269,7 +323,7 @@ void remove_movie(int socket, char *buffer, char *movie_name_copy)
 void get_movie_titles_and_rooms(int socket, char *buffer)
 {
   FILE *index, *movie;
-  char room[BUFFLEN], movie_name[BUFFLEN];
+  char movie_name[BUFFLEN];
 
   index = fopen(get_path(buffer, "index", 't'), "r");
 

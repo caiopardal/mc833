@@ -91,8 +91,8 @@ void make_request(int socket)
     {
     case '1':
       printf("adding a new movie...\n");
+      printf("movie added with \"%s\" identifier \n", strtok(NULL, ","));
       read_d(socket, buffer);
-      printf("movie added with \"%s\" identifier \n", strtok(NULL, " "));
       break;
     case '2':
       printf("removing \"%s\" movie...\n", strtok(NULL, " "));
