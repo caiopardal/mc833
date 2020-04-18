@@ -92,11 +92,10 @@ void make_request(int socket)
     case '1':
       printf("adding a new movie...\n");
       read_d(socket, buffer);
-      printf("movie added\n");
-      // printf("new movie id: %s\n", movieId);
+      printf("movie added with \"%s\" identifier \n", strtok(NULL, " "));
       break;
     case '2':
-      printf("removing the movie...\n");
+      printf("removing \"%s\" movie...\n", strtok(NULL, " "));
       read_d(socket, buffer);
       printf("movie removed\n");
       break;
@@ -119,7 +118,7 @@ void make_request(int socket)
       printf("movie title received\n");
       break;
     case '6': // Get full movie info
-      printf("awating \"%s\" info...\n", strtok(NULL, " "));
+      printf("awaiting \"%s\" info...\n", strtok(NULL, " "));
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movie info received\n");

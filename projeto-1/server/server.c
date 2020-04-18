@@ -184,13 +184,13 @@ void add_movie(int socket, char *buffer, char *movie_name)
 
 void remove_movie(int socket, char *buffer, char *movie_name_copy)
 {
-  printf("Movienamecopy: %s", movie_name_copy);
-
   // First we need to delete the line that contains the removed movie from index.txt
   FILE *index, *replacer;
   char filename[20] = "data/index.txt";
-  char ch, movie_name[BUFFLEN];
-  int delete_line, temp = 1;
+  char ch, movie_name[BUFFLEN], movie_to_compare[BUFFLEN];
+  int delete_line = 0, temp = 1;
+
+  strcpy(movie_to_compare, movie_name_copy);
 
   //open file in read mode
   index = fopen(get_path(buffer, "index", 't'), "r");
@@ -198,12 +198,12 @@ void remove_movie(int socket, char *buffer, char *movie_name_copy)
   while (fgets(movie_name, BUFFLEN, index))
   {
     movie_name[strlen(movie_name) - 1] = '\0';
-    printf("MovieName: %s\n", movie_name);
-    printf("Copy: %s\n", movie_name_copy);
-    printf("%d\n", strcmp(movie_name_copy, movie_name));
 
-    if (strcmp(movie_name_copy, movie_name))
+    if (strcmp(movie_to_compare, movie_name) == 0)
+    {
       delete_line = temp;
+      break;
+    }
 
     temp++;
   }
@@ -218,44 +218,49 @@ void remove_movie(int socket, char *buffer, char *movie_name_copy)
 
   //open new file in write mode
   replacer = fopen("data/replica.txt", "w");
-  ch = 'A';
   temp = 1;
-  while (ch != EOF)
+  int c = fgetc(index);
+
+  do
   {
-    ch = getc(index);
-    //except the line to be deleted
     if (temp != delete_line)
     {
       //copy all lines to file replica.txt
-      putc(ch, replacer);
+      fputc((char)c, replacer);
     }
-    if (ch == '\n')
+
+    if ((char)c == '\n')
     {
       temp++;
     }
-  }
+
+    // Checking for end of file
+    if (feof(index))
+      break;
+
+  } while ((c = fgetc(index)) != EOF);
 
   fclose(index);
   fclose(replacer);
-  // remove(filename);
+  remove(filename);
 
   //rename the file replica.txt to original name
-  // rename("data/replica.txt", filename);
+  rename("data/replica.txt", filename);
 
   // Now we need to delete the txt file for the chosen movie
   char fileName[1000] = "data/";
   char fileType[5] = ".txt";
 
-  strcat(fileName, movie_name_copy); // concatenate folder name with typed movie name
-  strcat(fileName, fileType);        // concatenate folder + movie_name with file type to generate the complete filename
+  strcat(fileName, movie_to_compare); // concatenate folder name with typed movie name
+  strcat(fileName, fileType);         // concatenate folder + movie_name with file type to generate the complete filename
 
-  // if (remove(fileName) == 0)
-  //   printf("Deleted successfully\n");
-  // else
-  // {
-  //   printf("Unable to delete the file\n");
-  //   exit(1);
-  // }
+  if (remove(fileName) == 0)
+    printf("Deleted successfully\n");
+  else
+  {
+    printf("Unable to delete the file\n");
+    exit(1);
+  }
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
   return;
