@@ -13,9 +13,9 @@
 #include <time.h>
 #include <sys/time.h>
 
-#define BUFFLEN 256 // Length of the message buffer
-#define PORT 3490   // the port users will be connecting to
-#define BACKLOG 10  // how many pending connections queue will hold
+#define BUFFLEN 2048 // Length of the message buffer
+#define PORT 3490    // the port users will be connecting to
+#define BACKLOG 10   // how many pending connections queue will hold
 
 // FUNCTIONS signatures
 void request_options(int);

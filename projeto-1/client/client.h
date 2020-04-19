@@ -11,8 +11,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-#define BUFFLEN 256 // Length of the message buffer
-#define PORT "3490" // the port client will be connecting to
+#define BUFFLEN 2048 // Length of the message buffer
+#define PORT "3490"  // the port client will be connecting to
 
 // Funcions signatures
 void receive_file(int, char *, char *);

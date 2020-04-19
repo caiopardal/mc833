@@ -74,7 +74,7 @@ void request_options(int socket)
   write_d(socket, buffer, strlen(buffer));
 
   // notify connections is set
-  strcpy(buffer, "Type help for instructions");
+  strcpy(buffer, "Type help for instructions\n");
   write_d(socket, buffer, strlen(buffer));
 
   while (1)
@@ -150,7 +150,7 @@ void add_movie(int socket, char *buffer, char *movie_info)
   /* File pointer to hold reference to our file */
   FILE *movie, *index;
   int count = 0;
-  char movie_info_copy[BUFFLEN], movie_name[BUFFLEN], movie_genre[BUFFLEN], movie_rooms[BUFFLEN];
+  char movie_info_copy[BUFFLEN], movie_name[BUFFLEN], movie_synopsis[BUFFLEN], movie_genre[BUFFLEN], movie_rooms[BUFFLEN];
   strcpy(movie_info_copy, movie_info);
 
   int init_size = strlen(movie_info_copy);
@@ -166,9 +166,13 @@ void add_movie(int socket, char *buffer, char *movie_info)
     }
     else if (count == 1)
     {
-      strcpy(movie_genre, ptr);
+      strcpy(movie_synopsis, ptr);
     }
     else if (count == 2)
+    {
+      strcpy(movie_genre, ptr);
+    }
+    else if (count == 3)
     {
       strcpy(movie_rooms, ptr);
     }
@@ -219,6 +223,9 @@ void add_movie(int socket, char *buffer, char *movie_info)
 
     /* Write data to file */
     fputs(movie_name, movie);
+    fputc(c, movie);
+
+    fputs(movie_synopsis, movie);
     fputc(c, movie);
 
     fputs(movie_genre, movie);
@@ -333,8 +340,8 @@ void get_movie_titles_and_rooms(int socket, char *buffer)
     movie = fopen(get_path(buffer, movie_name, 't'), "r");
 
     get_line(movie, buffer, 1);
-    strcat(buffer, " Salas de exibição: ");
-    get_line(movie, &buffer[strlen(buffer)], 3);
+    strcat(buffer, "\nSalas de exibição: ");
+    get_line(movie, &buffer[strlen(buffer)], 4);
     strcat(buffer, "\n");
     write_d(socket, buffer, strlen(buffer));
 
@@ -351,6 +358,7 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
 {
   FILE *index, *movie;
   char genre[BUFFLEN], movie_name[BUFFLEN];
+  int helper = 0; // flag to check if a movie from that genre exists
 
   strcpy(genre, genre_copy);
   index = fopen(get_path(buffer, "index", 't'), "r");
@@ -359,19 +367,26 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
   {
     movie_name[strlen(movie_name) - 1] = '\0';
     movie = fopen(get_path(buffer, movie_name, 't'), "r");
-    get_line(movie, buffer, 2);
+    get_line(movie, buffer, 3);
     printf("%s is of the genre |%s|%s|\n", movie_name, buffer, genre);
 
     if (!strcmp(buffer, genre))
     {
       get_line(movie, buffer, 1);
-      strcat(buffer, " Gênero: ");
-      get_line(movie, &buffer[strlen(buffer)], 2);
+      strcat(buffer, "\nGênero: ");
+      get_line(movie, &buffer[strlen(buffer)], 3);
       strcat(buffer, "\n");
       write_d(socket, buffer, strlen(buffer));
+      helper = 1;
     }
 
     fclose(movie);
+  }
+
+  if (helper == 0)
+  {
+    char no_movie[60] = "There is no movies from that genre inside the system :(\n";
+    write_d(socket, no_movie, strlen(no_movie)); // send a message that no movie with that genre exists
   }
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
@@ -384,12 +399,12 @@ void get_movie_title(int socket, char *buffer, char *movie_name)
 {
   FILE *movie;
   char path[BUFFLEN];
-  int i = 1;
+  char helper[14] = " <- Título\n";
 
   movie = fopen(get_path(path, movie_name, 't'), "r");
 
-  get_line(movie, buffer, i); // Get movie title
-  write_d(socket, strcat(buffer, "\n"), strlen(buffer) + 1);
+  get_line(movie, buffer, 1); // Get movie title
+  write_d(socket, strcat(buffer, helper), strlen(buffer) + strlen(helper));
 
   write_d(socket, buffer, 0); // Send empty buffer to sinal eof
 
@@ -422,7 +437,7 @@ void get_movie(int socket, char *buffer, char *buff_movie_name)
   FILE *fptr;
   int line = 0;
   char movie_name[BUFFLEN], tag[BUFFLEN];
-  char *tags[] = {"Nome: \0", "Gênero: \0", "Salas de exibição: \0", "              \0"};
+  char *tags[] = {"Nome: \0", "Sinopse: \0", "Gênero: \0", "Salas de exibição: \0", "                                 \0"};
 
   strcpy(movie_name, buff_movie_name); // Copy movie name key from buffer
 

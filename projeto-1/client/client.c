@@ -75,6 +75,7 @@ void make_request(int socket)
 
   // receive help
   read_d(socket, buffer);
+  printf("%s\n", buffer);
 
   while (1)
   {
