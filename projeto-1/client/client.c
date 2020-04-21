@@ -92,10 +92,23 @@ void make_request(int socket)
     {
     case '1':
       printf("adding a new movie...\n");
+
+      if (strtok(NULL, ",") == NULL)
+      {
+        printf("No movie info provided! Closing the connection...\n");
+        exit(1);
+      }
+
       printf("movie added with \"%s\" identifier \n", strtok(NULL, ","));
       read_d(socket, buffer);
       break;
     case '2':
+      if (strtok(NULL, " ") == NULL)
+      {
+        printf("No movie identifier provided! Closing the connection...\n");
+        exit(1);
+      }
+
       printf("removing \"%s\" movie...\n", strtok(NULL, " "));
       read_d(socket, buffer);
       printf("movie removed\n");
@@ -107,18 +120,37 @@ void make_request(int socket)
       printf("received movies\n");
       break;
     case '4':
+      if (strtok(NULL, " ") == NULL)
+      {
+        printf("No movie genre provided! Closing the connection...\n");
+        exit(1);
+      }
+
       printf("awaiting movies by genre...\n");
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movies by genre received\n");
       break;
     case '5':
+      if (strtok(NULL, " ") == NULL)
+      {
+        printf("No movie identifier provided! Closing the connection...\n");
+        exit(1);
+      }
+
       printf("awaiting \"%s\" title...\n", strtok(NULL, " "));
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movie title received\n");
       break;
     case '6': // Get full movie info
+      printf("movie: %s\n", strtok(NULL, " "));
+      if (strtok(NULL, " ") == NULL)
+      {
+        printf("No movie identifier provided! Closing the connection...\n");
+        exit(1);
+      }
+
       printf("awaiting \"%s\" info...\n", strtok(NULL, " "));
       while (buffer[0])
         receive_data(socket, buffer);
