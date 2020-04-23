@@ -1,5 +1,4 @@
 Opções disponíveis:
-
 1 - Cadastrar um novo filme recebendo como resposta positiva o seu respectivo identificador;
 2 - Remover um filme a partir do seu identificador;
 3 - Listar o título e salas de exibição de todos os filmes;
@@ -7,3 +6,4 @@ Opções disponíveis:
 5 - Dado o identificador de um filme, retornar o título do filme;
 6 - Dado o identificador de um filme, retornar todas as informações deste filme;
 7 - Listar todas as informações de todos os filmes;
+h - Listar todas as opções de requisições disponíveis;

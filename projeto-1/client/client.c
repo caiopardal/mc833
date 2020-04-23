@@ -1,9 +1,5 @@
 #include "client.h"
 
-clock_t start;
-char *time_path;
-FILE *time_output;
-
 int main(int argc, char *argv[])
 {
   int sockfd, rv;
@@ -12,12 +8,6 @@ int main(int argc, char *argv[])
   {
     fprintf(stderr, "Error: you need to pass a client hostname\n");
     exit(1);
-  }
-
-  if (argc == 3)
-  {
-    time_path = argv[2];
-    time_output = fopen(time_path, "w");
   }
 
   memset(&hints, 0, sizeof hints);
@@ -50,11 +40,11 @@ int main(int argc, char *argv[])
 
   if (p == NULL)
   {
-    fprintf(stderr, "client: failed to connect\n");
+    fprintf(stderr, "client: failed to create a connection\n");
     return 2;
   }
 
-  printf("client: connecting...\n");
+  printf("client: connecting to server...\n");
   freeaddrinfo(servers); // all done with this structure
   make_request(sockfd);
   close(sockfd);
@@ -69,7 +59,7 @@ void make_request(int socket)
   char buffer[BUFFLEN], movie_name[BUFFLEN];
   int i;
 
-  // receive server connection set confirmation
+  // receive server connection confirmation
   read_d(socket, buffer);
   printf("%s\n", buffer);
 
@@ -114,7 +104,7 @@ void make_request(int socket)
       printf("movie removed\n");
       break;
     case '3':
-      printf("awaiting titles and movie rooms...\n");
+      printf("awaiting titles and movie rooms...\n\n");
       while (buffer[0])
         receive_data(socket, buffer);
       printf("received movies\n");
@@ -143,7 +133,7 @@ void make_request(int socket)
         receive_data(socket, buffer);
       printf("movie title received\n");
       break;
-    case '6': // Get full movie info
+    case '6':
       if (strtok(NULL, " ") == NULL)
       {
         printf("No movie identifier provided! Closing the connection...\n");

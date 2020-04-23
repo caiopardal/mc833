@@ -8,21 +8,16 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <time.h>
-#include <sys/time.h>
 
 #define BUFFLEN 2048 // Length of the message buffer
 #define PORT "3490"  // the port client will be connecting to
 
 // Funcions signatures
-void receive_file(int, char *, char *);
 void make_request(int);
-char *get_name(char *);
-void send_file(int, char *, char *);
 void receive_data(int, char *);
 char *get_path(char *);
 
-// Debuggin wrapper for send
+// Debug wrapper for send
 int write_d(int socket, char *buffer, int length)
 {
   int i, r_val;
@@ -45,7 +40,7 @@ int write_d(int socket, char *buffer, int length)
   return r_val;
 }
 
-// Debuggin wrapper for recv
+// Debug wrapper for recv
 int read_d(int socket, char *buffer)
 {
   int r_val, total = 0;

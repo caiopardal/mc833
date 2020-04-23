@@ -1,8 +1,5 @@
 #include "server.h"
 
-char *time_path;
-FILE *time_output;
-
 int main(int argc, char *argv[])
 {
   int sockfd, new_fd, pid; // listen on sock_fd and new connection on new_fd
@@ -13,12 +10,6 @@ int main(int argc, char *argv[])
   {
     perror("gateway socket");
     exit(1);
-  }
-
-  if (argc == 2)
-  {
-    time_path = argv[1];
-    time_output = fopen(time_path, "w");
   }
 
   memset(&server, 0, sizeof server);
@@ -38,7 +29,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  printf("server: waiting for connections...\n");
+  printf("server: waiting for client connections...\n");
   while (1)
   { // main accept() loop
     sin_size = sizeof client;
@@ -49,7 +40,7 @@ int main(int argc, char *argv[])
       exit(1);
     }
 
-    printf("server: got connection\n");
+    printf("server: received connection\n");
     if (!fork())
     {                          // this is the child process
       close(sockfd);           // child doesn't need the listener
@@ -69,11 +60,11 @@ void request_options(int socket)
 {
   char buffer[BUFFLEN];
 
-  // notify connections is set
+  // notify that connection is set
   strcpy(buffer, "connection is set...\n");
   write_d(socket, buffer, strlen(buffer));
 
-  // notify connections is set
+  // notify that connection is set
   strcpy(buffer, "Type help for instructions\n");
   write_d(socket, buffer, strlen(buffer));
 
@@ -83,7 +74,7 @@ void request_options(int socket)
     printf("server awaiting new message...\n");
     read_d(socket, buffer);
 
-    // Test which request the client aksed for
+    // Test which request the client asked for
     switch (strtok(buffer, " ")[0])
     {
     case '#':

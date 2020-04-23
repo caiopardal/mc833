@@ -10,8 +10,6 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <time.h>
-#include <sys/time.h>
 #include <ctype.h>
 
 #define BUFFLEN 2048 // Length of the message buffer
@@ -23,8 +21,6 @@ void request_options(int);
 void send_file(int, char *, char *);
 void send_help(int, char *);
 char *get_name(char *);
-void send_data(int, char *, int);
-void receive_file(int, char *, char *);
 char *get_line(FILE *, char *, int);
 char *get_path(char *, char *, char);
 void get_all_movies(int, char *);
@@ -35,7 +31,7 @@ void remove_movie(int, char *, char *);
 void movies_by_genre(int, char *, char *);
 void get_movie_title(int, char *, char *);
 
-// Debuggin wrapper for send
+// Debug wrapper for send
 int write_d(int socket, char *buffer, int length)
 {
   int i, r_val;
@@ -58,7 +54,7 @@ int write_d(int socket, char *buffer, int length)
   return r_val;
 }
 
-// Debuggin wrapper for recv
+// Debug wrapper for recv
 int read_d(int socket, char *buffer)
 {
   int r_val, total = 0;
