@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 #define BUFFLEN 2048 // Length of the message buffer
 #define PORT 3490    // the port users will be connecting to

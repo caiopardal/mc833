@@ -97,7 +97,7 @@ void request_options(int socket)
       break;
     case '2':
       printf("removing the movie...\n");
-      remove_movie(socket, buffer, strtok(NULL, " "));
+      remove_movie(socket, buffer, strtok(NULL, "\n"));
       printf("movie removed\n");
       break;
     case '3':
@@ -112,12 +112,12 @@ void request_options(int socket)
       break;
     case '5':
       printf("retrieving movie title...\n");
-      get_movie_title(socket, buffer, strtok(NULL, " "));
+      get_movie_title(socket, buffer, strtok(NULL, "\n"));
       printf("movie title retrieved\n");
       break;
     case '6': // Get full movie info
       printf("retrieving movie...\n");
-      get_movie(socket, buffer, strtok(NULL, " "));
+      get_movie(socket, buffer, strtok(NULL, "\n"));
       printf("movie sent!\n");
       break;
     case '7':
@@ -237,6 +237,12 @@ void add_movie(int socket, char *buffer, char *movie_info)
 
   /* Close file to save file data */
   fclose(movie);
+
+  // Send positive response with the movie identifier to client
+  char identifier[BUFFLEN] = "";
+  strcat(identifier, movie_name);
+  strcpy(buffer, identifier);
+  write_d(socket, buffer, strlen(buffer));
 
   write_d(socket, buffer, 0); // Send empty buffer to signal eof
 

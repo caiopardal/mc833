@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
 void make_request(int socket)
 {
-  char buffer[BUFFLEN];
+  char buffer[BUFFLEN], movie_name[BUFFLEN];
   int i;
 
   // receive server connection set confirmation
@@ -91,16 +91,16 @@ void make_request(int socket)
     switch (strtok(buffer, " ")[0])
     {
     case '1':
-      printf("adding a new movie...\n");
+      printf("adding a new movie...\n\n");
 
-      if (strtok(NULL, ",") == NULL)
+      if (strtok(NULL, " ") == NULL)
       {
         printf("No movie info provided! Closing the connection...\n");
         exit(1);
       }
 
-      printf("movie added with \"%s\" identifier \n", strtok(NULL, ","));
-      read_d(socket, buffer);
+      printf("Movie Identifier: ");
+      receive_data(socket, buffer);
       break;
     case '2':
       if (strtok(NULL, " ") == NULL)
@@ -109,7 +109,7 @@ void make_request(int socket)
         exit(1);
       }
 
-      printf("removing \"%s\" movie...\n", strtok(NULL, " "));
+      printf("removing movie...\n\n");
       read_d(socket, buffer);
       printf("movie removed\n");
       break;
@@ -126,7 +126,7 @@ void make_request(int socket)
         exit(1);
       }
 
-      printf("awaiting movies by genre...\n");
+      printf("awaiting movies by genre...\n\n");
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movies by genre received\n");
@@ -138,26 +138,25 @@ void make_request(int socket)
         exit(1);
       }
 
-      printf("awaiting \"%s\" title...\n", strtok(NULL, " "));
+      printf("awaiting movie title...\n\n");
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movie title received\n");
       break;
     case '6': // Get full movie info
-      printf("movie: %s\n", strtok(NULL, " "));
       if (strtok(NULL, " ") == NULL)
       {
         printf("No movie identifier provided! Closing the connection...\n");
         exit(1);
       }
 
-      printf("awaiting \"%s\" info...\n", strtok(NULL, " "));
+      printf("awaiting movie info...\n\n");
       while (buffer[0])
         receive_data(socket, buffer);
       printf("movie info received\n");
       break;
     case '7':
-      printf("awaiting all movies...\n");
+      printf("awaiting all movies...\n\n");
       read_d(socket, buffer);
       while (buffer[0])
       {
