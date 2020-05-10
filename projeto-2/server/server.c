@@ -1,80 +1,56 @@
 #include "server.h"
 
+int len;
+struct sockaddr_in cliaddr; // Client on current turn
+
 int main(int argc, char *argv[])
 {
-  int sockfd, new_fd, pid; // listen on sock_fd and new connection on new_fd
-  struct sockaddr_in server, client;
-  int sin_size;
+  int sockfd;
+  struct sockaddr_in servaddr;
 
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+  // Creating socket file descriptor
+  if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
   {
-    perror("gateway socket");
-    exit(1);
+    perror("socket creation failed");
+    exit(EXIT_FAILURE);
   }
 
-  memset(&server, 0, sizeof server);
-  server.sin_family = AF_INET;
-  server.sin_port = htons(PORT);
-  server.sin_addr.s_addr = htonl(INADDR_ANY);
+  memset(&servaddr, 0, sizeof(servaddr));
+  memset(&cliaddr, 0, sizeof(cliaddr));
 
-  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1)
+  // Filling server information
+  servaddr.sin_family = AF_INET; // IPv4
+  servaddr.sin_addr.s_addr = INADDR_ANY;
+  servaddr.sin_port = htons(UDP_PORT);
+
+  // Bind the socket with the server address
+  if (bind(sockfd, (const struct sockaddr *)&servaddr,
+           sizeof(servaddr)) < 0)
   {
-    perror("server: bind");
-    exit(1);
+    perror("bind failed");
+    exit(EXIT_FAILURE);
   }
 
-  if (listen(sockfd, BACKLOG) == -1)
-  {
-    perror("listen");
-    exit(1);
-  }
-
-  printf("server: waiting for client connections...\n");
-  while (1)
-  { // main accept() loop
-    sin_size = sizeof client;
-    new_fd = accept(sockfd, (struct sockaddr *)&client, &sin_size);
-    if (new_fd == -1)
-    {
-      perror("accept");
-      exit(1);
-    }
-
-    printf("server: received connection\n");
-    if (!fork())
-    {                          // this is the child process
-      close(sockfd);           // child doesn't need the listener
-      request_options(new_fd); // Communication function
-      close(new_fd);
-      exit(0);
-    }
-    close(new_fd); // parent doesn't need this
-  }
+  request_options(sockfd);
+  close(sockfd);
 
   return 0;
 }
 
-/*#############################################################################*/
+////////////////////////////////////////////////////////////////////////////////
 
 void request_options(int socket)
 {
   char buffer[BUFFLEN];
-
-  // notify that connection is set
-  strcpy(buffer, "connection is set...\n");
-  write_d(socket, buffer, strlen(buffer));
-
-  // notify that connection is set
-  strcpy(buffer, "Type help for instructions\n");
-  write_d(socket, buffer, strlen(buffer));
+  int n;
 
   while (1)
   {
     // Await new message from client
-    printf("server awaiting new message...\n");
-    read_d(socket, buffer);
+    printf("server awaiting UDP message...\n");
+    read_udp(socket, buffer, &cliaddr, &len);
 
-    // Test which request the client asked for
+    // Test which request the client aksed for
     switch (strtok(buffer, " ")[0])
     {
     case '1':
@@ -121,10 +97,6 @@ void request_options(int socket)
     default:
       printf("invalid option\n");
     }
-
-    // End connection if requested by client
-    if (!strcmp(buffer, "exit"))
-      break;
   }
 
   return;
@@ -229,9 +201,9 @@ void add_movie(int socket, char *buffer, char *movie_info)
   char identifier[BUFFLEN] = "";
   strcat(identifier, movie_name);
   strcpy(buffer, identifier);
-  write_d(socket, buffer, strlen(buffer));
+  write_udp(socket, buffer, strlen(buffer), cliaddr, len);
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
   return;
 }
@@ -316,7 +288,7 @@ void remove_movie(int socket, char *buffer, char *movie_name_copy)
     exit(1);
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
   return;
 }
 
@@ -336,12 +308,12 @@ void get_movie_titles_and_rooms(int socket, char *buffer)
     strcat(buffer, "\nSalas de exibição: ");
     get_line(movie, &buffer[strlen(buffer)], 4);
     strcat(buffer, "\n");
-    write_d(socket, buffer, strlen(buffer));
+    write_udp(socket, buffer, strlen(buffer), cliaddr, len);
 
     fclose(movie);
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
   fclose(index);
   return;
@@ -369,7 +341,7 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
       strcat(buffer, "\nGênero: ");
       get_line(movie, &buffer[strlen(buffer)], 3);
       strcat(buffer, "\n");
-      write_d(socket, buffer, strlen(buffer));
+      write_udp(socket, buffer, strlen(buffer), cliaddr, len);
       helper = 1;
     }
 
@@ -379,10 +351,10 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
   if (helper == 0)
   {
     char no_movie[60] = "There is no movies from that genre inside the system :(\n";
-    write_d(socket, no_movie, strlen(no_movie)); // send a message that no movie with that genre exists
+    write_udp(socket, no_movie, strlen(no_movie), cliaddr, len); // send a message that no movie with that genre exists
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
   fclose(index);
   return;
@@ -397,9 +369,9 @@ void get_movie_title(int socket, char *buffer, char *movie_name)
   movie = fopen(get_path(path, movie_name, 't'), "r");
 
   get_line(movie, buffer, 1); // Get movie title
-  write_d(socket, strcat(buffer, helper), strlen(buffer) + strlen(helper));
+  write_udp(socket, strcat(buffer, helper), strlen(buffer) + strlen(helper), cliaddr, len);
 
-  write_d(socket, buffer, 0); // Send empty buffer to sinal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to sinal eof
 
   fclose(movie);
   return;
@@ -416,11 +388,12 @@ void get_all_movies(int socket, char *buffer)
   {
     buffer[strlen(buffer) - 1] = '\0';
     printf("sending movie: %s\n", buffer);
-    write_d(socket, buffer, strlen(buffer)); // send movie name
-    get_movie(socket, buffer, buffer);       // send movie
+    if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+      return;
+    get_movie(socket, buffer, buffer); // send movie
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
   return;
 }
@@ -448,12 +421,13 @@ void get_movie(int socket, char *buffer, char *buff_movie_name)
   {
     strcpy(tag, tags[line]);
     strcat(tag, buffer);
-    write_d(socket, tag, strlen(tag));
+    if (write_udp(socket, tag, strlen(tag), cliaddr, len) < 0)
+      return;
     if (line < 6)
       ++line;
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to sinal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to sinal eof
 
   return;
 }
