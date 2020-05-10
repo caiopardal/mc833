@@ -201,7 +201,8 @@ void add_movie(int socket, char *buffer, char *movie_info)
   char identifier[BUFFLEN] = "";
   strcat(identifier, movie_name);
   strcpy(buffer, identifier);
-  write_udp(socket, buffer, strlen(buffer), cliaddr, len);
+  if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+    return;
 
   write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
@@ -308,7 +309,8 @@ void get_movie_titles_and_rooms(int socket, char *buffer)
     strcat(buffer, "\nSalas de exibição: ");
     get_line(movie, &buffer[strlen(buffer)], 4);
     strcat(buffer, "\n");
-    write_udp(socket, buffer, strlen(buffer), cliaddr, len);
+    if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+      return;
 
     fclose(movie);
   }
@@ -341,7 +343,8 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
       strcat(buffer, "\nGênero: ");
       get_line(movie, &buffer[strlen(buffer)], 3);
       strcat(buffer, "\n");
-      write_udp(socket, buffer, strlen(buffer), cliaddr, len);
+      if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+        return;
       helper = 1;
     }
 
@@ -351,7 +354,8 @@ void movies_by_genre(int socket, char *buffer, char *genre_copy)
   if (helper == 0)
   {
     char no_movie[60] = "There is no movies from that genre inside the system :(\n";
-    write_udp(socket, no_movie, strlen(no_movie), cliaddr, len); // send a message that no movie with that genre exists
+    if (write_udp(socket, no_movie, strlen(no_movie), cliaddr, len) < 0) // send a message that no movie with that genre exists
+      return;
   }
 
   write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
@@ -369,7 +373,8 @@ void get_movie_title(int socket, char *buffer, char *movie_name)
   movie = fopen(get_path(path, movie_name, 't'), "r");
 
   get_line(movie, buffer, 1); // Get movie title
-  write_udp(socket, strcat(buffer, helper), strlen(buffer) + strlen(helper), cliaddr, len);
+  if (write_udp(socket, strcat(buffer, helper), strlen(buffer) + strlen(helper), cliaddr, len) < 0)
+    return;
 
   write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to sinal eof
 
@@ -443,10 +448,11 @@ void send_help(int socket, char *buffer)
   {
     buffer[strlen(buffer) - 1] = '\0';
     printf("sending: %s\n", buffer);
-    write_d(socket, buffer, strlen(buffer));
+    if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+      return;
   }
 
-  write_d(socket, buffer, 0); // Send empty buffer to signal eof
+  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
   return;
 }
@@ -457,25 +463,27 @@ void send_help(int socket, char *buffer)
 // them to the client
 void send_file(int socket, char *buffer, char *full_path)
 {
-  FILE *input;          // File that is going to be sent
-  long int i = 0, size; // size of it
+  FILE *input;          // File to be sent
+  long int i = 0, size; // Size of the file to be sent
 
   input = fopen(full_path, "rb");
   printf("sending file \"%s\"\n", get_name(full_path));
 
-  // Get file size
+  // Get size (amount of char in the file)
   fseek(input, 0, SEEK_END);
   size = ftell(input);
   fseek(input, 0, SEEK_SET);
 
-  sprintf(buffer, "%ld", size);            // Convert size to string
-  write_d(socket, buffer, strlen(buffer)); // Send to client
+  sprintf(buffer, "%ld", size); // Cast size to string
+  if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+    return;
 
   while (i < size)
-  { // reads char by char filling buffer until eof
-    buffer[(i++) % BUFFLEN] = fgetc(input);
-    if (i % BUFFLEN == 0 || i == size)
-      write_d(socket, buffer, BUFFLEN); // sends entire buffer to avoid border issues
+  {                                         // reads char by char filling buffer until eof
+    buffer[(i++) % BUFFLEN] = fgetc(input); // Add char to buffer, then incremente i
+    if (i % BUFFLEN == 0 || i == size)      // i buffer full or EOF send data
+      if (write_udp(socket, buffer, BUFFLEN, cliaddr, len) < 0)
+        return;
   }
 
   printf("file sent\n");
