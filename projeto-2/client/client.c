@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
   if (argc < 2)
   {
-    fprintf(stderr, "usage: client hostname\n");
+    fprintf(stderr, "Error: you need to pass a client hostname\n");
     exit(1);
   }
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
   servaddr = p->ai_addr;
 
   // Make requests to udp server
-  make_request(sock_udp);
+  make_request(sock_udp, servaddr);
 
   freeaddrinfo(servers); // all done with this structure
   close(sock_udp);
@@ -58,18 +58,20 @@ int main(int argc, char *argv[])
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void make_request(int socket)
+void make_request(int sock_udp, struct sockaddr *servaddr)
 {
-  char buffer[BUFFLEN], movie_name[BUFFLEN];
-  int i;
+  char buffer[BUFFLEN];
+  int i, socket;
 
-  // receive server connection confirmation
-  read_udp(socket, buffer, servaddr, &len);
-  printf("%s\n", buffer);
+  socket = sock_udp;
 
-  // receive help
-  read_udp(socket, buffer, servaddr, &len);
-  printf("%s\n", buffer);
+  // // receive server connection confirmation
+  // read_udp(socket, buffer, servaddr, &len);
+  // printf("%s\n", buffer);
+
+  // // receive help
+  // read_udp(socket, buffer, servaddr, &len);
+  // printf("%s\n", buffer);
 
   while (1)
   {
@@ -158,7 +160,7 @@ void make_request(int socket)
       while (buffer[0])
       {
         receive_data(socket, buffer);
-        read_d(socket, buffer);
+        read_udp(socket, buffer, servaddr, &len);
       }
       printf("\nall movies received\n");
       break;

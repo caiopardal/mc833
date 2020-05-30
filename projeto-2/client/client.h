@@ -17,7 +17,7 @@
 typedef struct sockaddr *sap;
 
 // Funcions signatures
-void make_request(int);
+void make_request(int, sap);
 void receive_data(int, char *);
 char *get_path(char *);
 
