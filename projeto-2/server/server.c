@@ -202,7 +202,10 @@ void add_movie(int socket, char *buffer, char *movie_info)
   strcat(identifier, movie_name);
   strcpy(buffer, identifier);
   if (write_udp(socket, buffer, strlen(buffer), cliaddr, len) < 0)
+  {
+    printf("I'm HERE!!");
     return;
+  }
 
   write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
 
@@ -289,7 +292,9 @@ void remove_movie(int socket, char *buffer, char *movie_name_copy)
     exit(1);
   }
 
-  write_udp(socket, buffer, 0, cliaddr, len); // Send empty buffer to signal eof
+  if (write_udp(socket, buffer, 0, cliaddr, len) < 0)
+    return; // Send empty buffer to signal eof
+
   return;
 }
 

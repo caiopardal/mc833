@@ -8,8 +8,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <time.h>
-#include <sys/time.h>
 
 #define BUFFLEN 2048 // Length of the message buffer
 #define UDP_PORT "8080"
@@ -55,6 +53,7 @@ int read_udp(int socket, char *buffer, sap sender, int *sender_len)
     if ((r_val = recvfrom(socket, &buffer[total], (BUFFLEN - total), MSG_WAITALL,
                           sender, sender_len)) == -1)
     {
+      printf("GOT HERE\n");
       if (errno != 11)
       {
         printf("ERROR: message might be lost/corrupted.\n");

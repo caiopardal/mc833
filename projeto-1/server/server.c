@@ -141,7 +141,7 @@ void add_movie(int socket, char *buffer, char *movie_info)
   strcpy(movie_info_copy, movie_info);
 
   int init_size = strlen(movie_info_copy);
-  char delim[] = ",";
+  char delim[] = ";";
 
   char *ptr = strtok(movie_info_copy, delim);
 

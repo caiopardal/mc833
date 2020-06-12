@@ -61,17 +61,24 @@ int main(int argc, char *argv[])
 void make_request(int sock_udp, struct sockaddr *servaddr)
 {
   char buffer[BUFFLEN];
-  int i, socket;
+  int socket;
 
   socket = sock_udp;
 
-  // // receive server connection confirmation
-  // read_udp(socket, buffer, servaddr, &len);
-  // printf("%s\n", buffer);
+  printf("connection is set...\n");
 
-  // // receive help
-  // read_udp(socket, buffer, servaddr, &len);
-  // printf("%s\n", buffer);
+  const char *helpInstructions =
+      "Opções disponíveis:\n"
+      "1 - Cadastrar um novo filme recebendo como resposta positiva o seu respectivo identificador;\n"
+      "2 - Remover um filme a partir do seu identificador;\n"
+      "3 - Listar o título e salas de exibição de todos os filmes;\n"
+      "4 - Listar todos os títulos de filmes de um determinado gênero;\n"
+      "5 - Dado o identificador de um filme, retornar o título do filme;\n"
+      "6 - Dado o identificador de um filme, retornar todas as informações deste filme;\n"
+      "7 - Listar todas as informações de todos os filmes;\n"
+      "h - Listar todas as opções de requisições disponíveis;\n";
+
+  printf("%s\n", helpInstructions);
 
   while (1)
   {
@@ -107,8 +114,6 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
       }
 
       printf("removing movie...\n\n");
-      if (write_udp(socket, buffer, strlen(buffer), servaddr) < 0)
-        return;
       printf("movie removed\n");
       break;
     case '3':
@@ -183,11 +188,13 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 // Receive messages that are going to be printed in terminal
 void receive_data(int socket, char *buffer)
 {
-
   buffer[0] = 'x';
   while (buffer[0] != '\0')
   { // print all messages
-    read_udp(socket, buffer, servaddr, &len);
+    if (read_udp(socket, buffer, servaddr, &len) < 0)
+    {
+      return;
+    }
     printf("%s\n", buffer);
   }
 

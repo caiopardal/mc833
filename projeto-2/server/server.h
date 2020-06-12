@@ -10,8 +10,6 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <time.h>
-#include <sys/time.h>
 
 #define BUFFLEN 2048  // Length of the message buffer
 #define UDP_PORT 8080 // the UDP port users will be connectiog to
