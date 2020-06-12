@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
 {
   int sock_udp, rv;
   struct addrinfo hints, *p, *servers;
+  struct timeval timeout;
 
   if (argc < 2)
   {
@@ -48,6 +49,10 @@ int main(int argc, char *argv[])
   // Save destination server for UDP
   servaddr = p->ai_addr;
 
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 100000;
+  setsockopt(sock_udp, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
   // Make requests to udp server
   make_request(sock_udp, servaddr);
 
@@ -82,6 +87,8 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 
   while (1)
   {
+    int interceptor = 0;
+
     // Scan and send user request
     printf("awaiting input:\n");
     scanf(" %[^\n]", buffer);
@@ -104,7 +111,11 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
       }
 
       printf("Movie Identifier: ");
-      receive_data(socket, buffer);
+      interceptor = receive_data(socket, buffer);
+
+      if (interceptor < 0)
+        printf("\nError: Movie was added, but the server couldn't retrive it's identifier. So it's identifier is the name that you typed!\n");
+
       break;
     case '2':
       if (strtok(NULL, " ") == NULL)
@@ -119,8 +130,16 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
     case '3':
       printf("awaiting titles and movie rooms...\n\n");
       while (buffer[0])
-        receive_data(socket, buffer);
-      printf("received movies\n");
+      {
+        interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+      }
+
+      if (interceptor < 0)
+        printf("Error: Couldn't receive all movies\n");
+      else
+        printf("received movies\n");
       break;
     case '4':
       if (strtok(NULL, " ") == NULL)
@@ -131,8 +150,16 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 
       printf("awaiting movies by genre...\n\n");
       while (buffer[0])
-        receive_data(socket, buffer);
-      printf("movies by genre received\n");
+      {
+        interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+      }
+
+      if (interceptor < 0)
+        printf("Error: Couldn't receive all the movies by genre\n");
+      else
+        printf("movies by genre received\n");
       break;
     case '5':
       if (strtok(NULL, " ") == NULL)
@@ -143,8 +170,16 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 
       printf("awaiting movie title...\n\n");
       while (buffer[0])
-        receive_data(socket, buffer);
-      printf("movie title received\n");
+      {
+        interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+      }
+
+      if (interceptor < 0)
+        printf("Error: Movie Title could not be received\n");
+      else
+        printf("movie title received\n");
       break;
     case '6':
       if (strtok(NULL, " ") == NULL)
@@ -155,8 +190,16 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 
       printf("awaiting movie info...\n\n");
       while (buffer[0])
-        receive_data(socket, buffer);
-      printf("movie info received\n");
+      {
+        int interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+      }
+
+      if (interceptor < 0)
+        printf("Error: Movie info could not be receiveid\n");
+      else
+        printf("movie info received\n");
       break;
     case '7':
       printf("awaiting all movies...\n\n");
@@ -164,14 +207,27 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
         return;
       while (buffer[0])
       {
-        receive_data(socket, buffer);
-        read_udp(socket, buffer, servaddr, &len);
+        interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+
+        interceptor = read_udp(socket, buffer, servaddr, &len);
+        if (interceptor < 0)
+          break;
       }
-      printf("\nall movies received\n");
+
+      if (interceptor < 0)
+        printf("\nError: Movies infos could not be received\n");
+      else
+        printf("\nall movies received\n");
       break;
     case 'h':
       while (buffer[0])
-        receive_data(socket, buffer);
+      {
+        interceptor = receive_data(socket, buffer);
+        if (interceptor < 0)
+          break;
+      }
       break;
     case 'e':
       return;
@@ -186,19 +242,17 @@ void make_request(int sock_udp, struct sockaddr *servaddr)
 /*## Functions for messages ##################################*/
 
 // Receive messages that are going to be printed in terminal
-void receive_data(int socket, char *buffer)
+int receive_data(int socket, char *buffer)
 {
   buffer[0] = 'x';
   while (buffer[0] != '\0')
   { // print all messages
     if (read_udp(socket, buffer, servaddr, &len) < 0)
-    {
-      return;
-    }
+      return -1;
     printf("%s\n", buffer);
   }
 
-  return;
+  return 0;
 }
 
 /*## Functions for transfering files ##################################*/

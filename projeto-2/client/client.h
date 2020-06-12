@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define BUFFLEN 2048 // Length of the message buffer
 #define UDP_PORT "8080"
@@ -16,7 +18,7 @@ typedef struct sockaddr *sap;
 
 // Funcions signatures
 void make_request(int, sap);
-void receive_data(int, char *);
+int receive_data(int, char *);
 char *get_path(char *);
 
 // UDP SEND AND RECEIVE WRAPPERS ///////////////////////////////////////////////
@@ -53,7 +55,6 @@ int read_udp(int socket, char *buffer, sap sender, int *sender_len)
     if ((r_val = recvfrom(socket, &buffer[total], (BUFFLEN - total), MSG_WAITALL,
                           sender, sender_len)) == -1)
     {
-      printf("GOT HERE\n");
       if (errno != 11)
       {
         printf("ERROR: message might be lost/corrupted.\n");
@@ -61,7 +62,7 @@ int read_udp(int socket, char *buffer, sap sender, int *sender_len)
       }
       else
       {
-        printf("client: reached timeout (package might have been lost).\n");
+        printf("\nCLIENT: reached timeout (package might have been lost).\n");
         return -1;
       }
     }
